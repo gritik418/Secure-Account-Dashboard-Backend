@@ -244,6 +244,8 @@ export const verifyEmail = async (req, res) => {
         });
         const user = await User.findOne({ email: output.email });
         if (!user) {
+            await EmailVerification.findOneAndDelete({ userId: user._id });
+            await User.findByIdAndDelete(user._id);
             return res.status(401).json({
                 success: false,
                 status: 400,
@@ -254,6 +256,8 @@ export const verifyEmail = async (req, res) => {
             userId: user._id,
         });
         if (!verificationToken) {
+            await EmailVerification.findOneAndDelete({ userId: user._id });
+            await User.findByIdAndDelete(user._id);
             return res.status(401).json({
                 success: false,
                 status: 400,
@@ -262,6 +266,8 @@ export const verifyEmail = async (req, res) => {
         }
         const verify = await bcrypt.compare(output.otp, verificationToken.secretKey);
         if (!verify) {
+            await EmailVerification.findOneAndDelete({ userId: user._id });
+            await User.findByIdAndDelete(user._id);
             return res.status(401).json({
                 success: false,
                 status: 400,
@@ -289,8 +295,10 @@ export const verifyEmail = async (req, res) => {
         await history.save();
         await User.findByIdAndUpdate(user._id, {
             $push: { login_history: history._id },
+            $set: { email_verified: true },
         });
-        return res.status(200).json({
+        await EmailVerification.findOneAndDelete({ userId: user._id });
+        return res.status(201).json({
             success: true,
             status: 201,
             token: token,
