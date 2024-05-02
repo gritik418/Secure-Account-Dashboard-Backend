@@ -11,6 +11,7 @@ import sendEmail from "../utils/sendEmail.js";
 import verificationTemplate from "../utils/verificationTemplate.js";
 import DeviceDetector from "device-detector-js";
 import { v4 as uuidv4 } from "uuid";
+import verificationSchema from "../validators/verificationSchema.js";
 vine.errorReporter = () => new ErrorReporter();
 export const userLogin = async (req, res) => {
     try {
@@ -182,6 +183,7 @@ export const userSignup = async (req, res) => {
         return res.status(200).json({
             success: true,
             status: 200,
+            email: output.email,
             message: "Email sent.",
         });
     }
@@ -226,6 +228,83 @@ export const signOutFromOtherDevice = async (req, res) => {
         });
     }
     catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Server Error",
+            status: 400,
+        });
+    }
+};
+export const verifyEmail = async (req, res) => {
+    try {
+        const data = req.body;
+        const output = await vine.validate({
+            schema: verificationSchema,
+            data,
+        });
+        const user = await User.findOne({ email: output.email });
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                status: 400,
+                message: "Invalid Email.",
+            });
+        }
+        const verificationToken = await EmailVerification.findOne({
+            userId: user._id,
+        });
+        if (!verificationToken) {
+            return res.status(401).json({
+                success: false,
+                status: 400,
+                message: "OTP Expired.",
+            });
+        }
+        const verify = await bcrypt.compare(output.otp, verificationToken.secretKey);
+        if (!verify) {
+            return res.status(401).json({
+                success: false,
+                status: 400,
+                message: "OTP Expired.",
+            });
+        }
+        const userAgent = req.headers["user-agent"];
+        const sk = uuidv4();
+        const payload = {
+            id: user._id,
+            sk: sk,
+        };
+        const token = await user.generateAuthToken(payload);
+        await User.findByIdAndUpdate(user._id, {
+            $push: { tokens: { token, secretKey: sk } },
+        });
+        const deviceDetector = new DeviceDetector();
+        const device = deviceDetector.parse(userAgent);
+        const history = new LoginHistory({
+            userId: user._id,
+            secretKey: sk,
+            userAgent,
+            device: device,
+        });
+        await history.save();
+        await User.findByIdAndUpdate(user._id, {
+            $push: { login_history: history._id },
+        });
+        return res.status(200).json({
+            success: true,
+            status: 201,
+            token: token,
+            message: "Account created Successfully..",
+        });
+    }
+    catch (error) {
+        if (error instanceof errors.E_VALIDATION_ERROR) {
+            return res.status(400).json({
+                success: false,
+                status: 400,
+                errors: error.messages,
+            });
+        }
         return res.status(500).json({
             success: false,
             message: "Server Error",

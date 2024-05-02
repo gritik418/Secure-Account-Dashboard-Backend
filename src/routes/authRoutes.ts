@@ -13,4 +13,5 @@ router.post("/login", userLogin);
 router.post("/signup", userSignup);
 
 router.get("/signout/:uniqueId", authenticate, signOutFromOtherDevice);
+
 export default router;
