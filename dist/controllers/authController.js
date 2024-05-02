@@ -54,6 +54,35 @@ export const userLogin = async (req, res) => {
                 message: "Invalid Credentials!!",
             });
         }
+        const userAgent = req.headers["user-agent"];
+        const checkUserAgent = await LoginHistory.findOne({
+            userId: user._id,
+            userAgent,
+        });
+        if (checkUserAgent) {
+            const payload = {
+                id: user._id,
+                sk: checkUserAgent.secretKey,
+            };
+            const token = await user.generateAuthToken(payload);
+            const verifySecretKey = await User.findOne({
+                tokens: { $eq: { secretKey: checkUserAgent.secretKey } },
+            });
+            if (!verifySecretKey) {
+                const deletedHistory = await LoginHistory.findOneAndDelete(checkUserAgent._id);
+                await User.findByIdAndUpdate(user._id, {
+                    $pull: { login_history: deletedHistory._id },
+                });
+            }
+            else {
+                return res.status(200).json({
+                    success: true,
+                    status: 200,
+                    token: token,
+                    message: "Logged In Successfully..",
+                });
+            }
+        }
         const sk = uuidv4();
         const payload = {
             id: user._id,
@@ -63,7 +92,6 @@ export const userLogin = async (req, res) => {
         await User.findByIdAndUpdate(user._id, {
             $push: { tokens: { token, secretKey: sk } },
         });
-        const userAgent = req.headers["user-agent"];
         const deviceDetector = new DeviceDetector();
         const device = deviceDetector.parse(userAgent);
         const history = new LoginHistory({
