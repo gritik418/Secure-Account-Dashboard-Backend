@@ -8,6 +8,13 @@ export const getUser = async (req, res) => {
         const loginRecord = await LoginHistory.findOne({
             secretKey: req.params.sk,
         });
+        if (!loginRecord) {
+            return res.status(401).json({
+                success: false,
+                status: 400,
+                message: "Please Login.",
+            });
+        }
         if (!user || !user.email_verified) {
             return res.status(401).json({
                 success: false,

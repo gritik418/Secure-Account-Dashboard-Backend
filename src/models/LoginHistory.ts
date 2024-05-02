@@ -11,6 +11,10 @@ const LoginHistorySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    userAgent: {
+      type: String,
+      required: true,
+    },
     device: {
       type: mongoose.Schema.Types.Mixed,
     },

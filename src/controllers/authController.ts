@@ -87,6 +87,7 @@ export const userLogin = async (req: Request, res: Response) => {
     const history = new LoginHistory({
       userId: user._id,
       secretKey: sk,
+      userAgent,
       device: device,
     });
 
@@ -198,6 +199,43 @@ export const userSignup = async (req: Request, res: Response) => {
         errors: error.messages,
       });
     }
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      status: 400,
+    });
+  }
+};
+
+export const signOutFromOtherDevice = async (req: Request, res: Response) => {
+  try {
+    const historyId = req.params.uniqueId;
+    const userId = req.params.id;
+
+    if (!historyId) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "Id is required.",
+      });
+    }
+
+    const history = await LoginHistory.findByIdAndDelete(historyId);
+
+    await User.findByIdAndUpdate(userId, {
+      $pull: {
+        login_history: history._id,
+        tokens: { secretKey: history.secretKey },
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Signed Out.",
+      deletedHistory: history,
+    });
+  } catch (error) {
     return res.status(500).json({
       success: false,
       message: "Server Error",
