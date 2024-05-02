@@ -73,13 +73,6 @@ export const userLogin = async (req: Request, res: Response) => {
     });
 
     if (checkUserAgent) {
-      const payload: PayloadType = {
-        id: user._id,
-        sk: checkUserAgent.secretKey,
-      };
-
-      const token = await user.generateAuthToken(payload);
-
       const verifySecretKey = await User.findOne({
         tokens: { $eq: { secretKey: checkUserAgent.secretKey } },
       });
@@ -92,6 +85,13 @@ export const userLogin = async (req: Request, res: Response) => {
           $pull: { login_history: deletedHistory._id },
         });
       } else {
+        const payload: PayloadType = {
+          id: user._id,
+          sk: checkUserAgent.secretKey,
+        };
+
+        const token = await user.generateAuthToken(payload);
+
         return res.status(200).json({
           success: true,
           status: 200,

@@ -60,11 +60,6 @@ export const userLogin = async (req, res) => {
             userAgent,
         });
         if (checkUserAgent) {
-            const payload = {
-                id: user._id,
-                sk: checkUserAgent.secretKey,
-            };
-            const token = await user.generateAuthToken(payload);
             const verifySecretKey = await User.findOne({
                 tokens: { $eq: { secretKey: checkUserAgent.secretKey } },
             });
@@ -75,6 +70,11 @@ export const userLogin = async (req, res) => {
                 });
             }
             else {
+                const payload = {
+                    id: user._id,
+                    sk: checkUserAgent.secretKey,
+                };
+                const token = await user.generateAuthToken(payload);
                 return res.status(200).json({
                     success: true,
                     status: 200,
