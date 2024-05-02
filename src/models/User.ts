@@ -42,7 +42,12 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    login_history: [{}],
+    login_history: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LoginHistory",
+      },
+    ],
     tokens: [
       {
         token: { type: String, required: true },

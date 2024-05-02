@@ -11,8 +11,7 @@ import generateOTP from "../utils/generateOTP.js";
 import sendEmail, { MailOptionsType } from "../utils/sendEmail.js";
 import verificationTemplate from "../utils/verificationTemplate.js";
 import DeviceDetector from "device-detector-js";
-
-const deviceDetector = new DeviceDetector();
+import { v4 as uuidv4 } from "uuid";
 
 vine.errorReporter = () => new ErrorReporter();
 
@@ -66,7 +65,7 @@ export const userLogin = async (req: Request, res: Response) => {
       });
     }
 
-    const sk = "uuid";
+    const sk = uuidv4();
 
     const payload: PayloadType = {
       id: user._id,
@@ -81,6 +80,8 @@ export const userLogin = async (req: Request, res: Response) => {
 
     const userAgent = req.headers["user-agent"];
 
+    const deviceDetector = new DeviceDetector();
+
     const device = deviceDetector.parse(userAgent);
 
     const history = new LoginHistory({
@@ -90,6 +91,10 @@ export const userLogin = async (req: Request, res: Response) => {
     });
 
     await history.save();
+
+    await User.findByIdAndUpdate(user._id, {
+      $push: { login_history: history._id },
+    });
 
     return res.status(200).json({
       success: true,

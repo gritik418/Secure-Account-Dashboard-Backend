@@ -7,24 +7,12 @@ const LoginHistorySchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    active: {
+      type: Boolean,
+      default: false,
+    },
     device: {
-      client: {
-        type: String,
-        name: String,
-        version: String,
-        engine: String,
-        engineVersion: String,
-      },
-      os: {
-        name: String,
-        version: String,
-        platform: String,
-      },
-      device: {
-        type: String,
-        brand: String,
-        model: String,
-      },
+      type: mongoose.Schema.Types.Mixed,
     },
     secretKey: {
       type: String,
