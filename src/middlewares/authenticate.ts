@@ -29,7 +29,6 @@ const authenticate = async (
 
     next();
   } catch (error) {
-    console.log(error);
     return res.status(401).json({
       success: false,
       status: 400,

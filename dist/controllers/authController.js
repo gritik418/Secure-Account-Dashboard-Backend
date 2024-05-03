@@ -55,61 +55,25 @@ export const userLogin = async (req, res) => {
                 message: "Invalid Credentials!!",
             });
         }
-        const userAgent = req.headers["user-agent"];
-        const checkUserAgent = await LoginHistory.findOne({
+        const otp = generateOTP();
+        const verificationToken = new EmailVerification({
             userId: user._id,
-            userAgent,
+            secretKey: otp,
         });
-        if (checkUserAgent) {
-            const verifySecretKey = await User.findOne({
-                tokens: { $eq: { secretKey: checkUserAgent.secretKey } },
-            });
-            if (!verifySecretKey) {
-                const deletedHistory = await LoginHistory.findOneAndDelete(checkUserAgent._id);
-                await User.findByIdAndUpdate(user._id, {
-                    $pull: { login_history: deletedHistory._id },
-                });
-            }
-            else {
-                const payload = {
-                    id: user._id,
-                    sk: checkUserAgent.secretKey,
-                };
-                const token = await user.generateAuthToken(payload);
-                return res.status(200).json({
-                    success: true,
-                    status: 200,
-                    token: token,
-                    message: "Logged In Successfully..",
-                });
-            }
-        }
-        const sk = uuidv4();
-        const payload = {
-            id: user._id,
-            sk: sk,
+        await verificationToken.save();
+        const mailOptions = {
+            from: "SecureAccountDashboard@official.com",
+            to: output.email,
+            subject: "Verify your Email Address",
+            text: `Verify your Email Address to create an account with iNotes.\nThe otp for the email address is ${otp}.\nThe otp is valid only for 10 minutes.`,
+            html: verificationTemplate(otp),
         };
-        const token = await user.generateAuthToken(payload);
-        await User.findByIdAndUpdate(user._id, {
-            $push: { tokens: { token, secretKey: sk } },
-        });
-        const deviceDetector = new DeviceDetector();
-        const device = deviceDetector.parse(userAgent);
-        const history = new LoginHistory({
-            userId: user._id,
-            secretKey: sk,
-            userAgent,
-            device: device,
-        });
-        await history.save();
-        await User.findByIdAndUpdate(user._id, {
-            $push: { login_history: history._id },
-        });
+        await sendEmail(mailOptions);
         return res.status(200).json({
             success: true,
             status: 200,
-            token: token,
-            message: "Logged In Successfully..",
+            email: output.email,
+            message: "Email sent.",
         });
     }
     catch (error) {
@@ -275,7 +239,52 @@ export const verifyEmail = async (req, res) => {
             });
         }
         const userAgent = req.headers["user-agent"];
+        const checkUserAgent = await LoginHistory.findOne({
+            userId: user._id,
+            userAgent,
+        });
         const sk = uuidv4();
+        if (checkUserAgent) {
+            const verifySecretKey = await User.findOne({
+                tokens: { $eq: { secretKey: checkUserAgent.secretKey } },
+            });
+            if (!verifySecretKey) {
+                const deletedHistory = await LoginHistory.findOneAndDelete(checkUserAgent._id);
+                await User.findByIdAndUpdate(user._id, {
+                    $pull: { login_history: deletedHistory._id },
+                });
+            }
+            else {
+                const payload = {
+                    id: user._id,
+                    sk: checkUserAgent.secretKey,
+                };
+                const token = await user.generateAuthToken(payload);
+                await User.findByIdAndUpdate(user._id, {
+                    $push: { tokens: { token, secretKey: sk } },
+                });
+                const deviceDetector = new DeviceDetector();
+                const device = deviceDetector.parse(userAgent);
+                const history = new LoginHistory({
+                    userId: user._id,
+                    secretKey: sk,
+                    userAgent,
+                    device: device,
+                });
+                await history.save();
+                await User.findByIdAndUpdate(user._id, {
+                    $push: { login_history: history._id },
+                    $set: { email_verified: true },
+                });
+                await EmailVerification.findOneAndDelete({ userId: user._id });
+                return res.status(201).json({
+                    success: true,
+                    status: 201,
+                    token: token,
+                    message: "Account created Successfully..",
+                });
+            }
+        }
         const payload = {
             id: user._id,
             sk: sk,
