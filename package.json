@@ -30,6 +30,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.3.3",
     "nodemailer": "^6.9.13",
+    "socket.io": "^4.7.5",
     "uuid": "^9.0.1"
   }
 }
