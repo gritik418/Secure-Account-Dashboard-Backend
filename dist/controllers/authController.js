@@ -220,8 +220,6 @@ export const verifyEmail = async (req, res) => {
             userId: user._id,
         });
         if (!verificationToken) {
-            await EmailVerification.findOneAndDelete({ userId: user._id });
-            await User.findByIdAndDelete(user._id);
             return res.status(401).json({
                 success: false,
                 status: 400,
