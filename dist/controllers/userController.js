@@ -22,9 +22,6 @@ export const getUser = async (req, res) => {
                 message: "Please Login.",
             });
         }
-        await LoginHistory.findByIdAndUpdate(loginRecord._id, {
-            $set: { active: true },
-        });
         return res.status(200).json({
             success: true,
             status: 200,
