@@ -22,7 +22,7 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 8000;
 const staticPath = path.resolve("../public");
 app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "https://www.differentServerDomain.fr https://www.differentServerDomain.fr");
+    res.header("Access-Control-Allow-Origin", "https://secure-account-dashboard.vercel.app");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });

@@ -29,7 +29,7 @@ const staticPath = path.resolve("../public");
 app.use(function (req, res, next) {
   res.header(
     "Access-Control-Allow-Origin",
-    "https://www.differentServerDomain.fr https://www.differentServerDomain.fr"
+    "https://secure-account-dashboard.vercel.app"
   );
   res.header(
     "Access-Control-Allow-Headers",
