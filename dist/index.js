@@ -7,7 +7,6 @@ import cors from "cors";
 import path from "path";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import LoginHistory from "./models/LoginHistory.js";
 connectToDB();
 const app = express();
 const server = createServer(app);
@@ -25,28 +24,11 @@ app.use(express.json());
 app.use("/api", authRoutes);
 app.use("/api/user", userRoutes);
 io.on("connection", (socket) => {
-    socket.on("active", async ({ currentDevice, login_history }) => {
+    socket.on("active", ({ currentDevice, login_history }) => {
         socket.join(currentDevice._id);
-        await LoginHistory.findByIdAndUpdate(currentDevice._id, {
-            $set: { active: true },
-        });
         login_history.map((history) => {
             if (history._id !== currentDevice._id) {
-                socket
-                    .to(history._id)
-                    .emit("device-active", { activeDevice: currentDevice._id });
-            }
-        });
-    });
-    socket.on("offline", async ({ currentDevice, login_history }) => {
-        await LoginHistory.findByIdAndUpdate(currentDevice._id, {
-            $set: { active: false },
-        });
-        login_history.map((history) => {
-            if (history._id !== currentDevice._id) {
-                socket
-                    .to(history._id)
-                    .emit("device-inactive", { inactiveDevice: currentDevice._id });
+                socket.to(history._id).emit("device-active", { login_history });
             }
         });
     });
