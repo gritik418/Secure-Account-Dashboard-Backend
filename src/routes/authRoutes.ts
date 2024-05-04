@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  changePassword,
+  logout,
   signOutFromOtherDevice,
   userLogin,
   userSignup,
@@ -14,6 +16,10 @@ router.post("/login", userLogin);
 router.post("/signup", userSignup);
 
 router.post("/verify", verifyEmail);
+
+router.patch("/changepassword", authenticate, changePassword);
+
+router.get("/logout", authenticate, logout);
 
 router.get("/signout/:uniqueId", authenticate, signOutFromOtherDevice);
 

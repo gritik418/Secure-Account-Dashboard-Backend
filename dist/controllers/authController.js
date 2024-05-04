@@ -12,6 +12,7 @@ import verificationTemplate from "../utils/verificationTemplate.js";
 import DeviceDetector from "device-detector-js";
 import { v4 as uuidv4 } from "uuid";
 import verificationSchema from "../validators/verificationSchema.js";
+import changePasswordSchema from "../validators/changePasswordSchema.js";
 vine.errorReporter = () => new ErrorReporter();
 export const userLogin = async (req, res) => {
     try {
@@ -320,6 +321,78 @@ export const verifyEmail = async (req, res) => {
                 errors: error.messages,
             });
         }
+        return res.status(500).json({
+            success: false,
+            message: "Server Error",
+            status: 400,
+        });
+    }
+};
+export const changePassword = async (req, res) => {
+    try {
+        const data = req.body;
+        const userId = req.params.id;
+        const output = await vine.validate({
+            schema: changePasswordSchema,
+            data,
+        });
+        const user = await User.findById(userId);
+        if (output.new_password === output.old_password) {
+            return res.status(401).json({
+                success: false,
+                message: "Password must be different from old one.",
+                status: 401,
+            });
+        }
+        const verify = await bcrypt.compare(output.old_password, user.password);
+        if (!verify) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid Password.",
+                status: 401,
+            });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(output.new_password, salt);
+        await User.findByIdAndUpdate(userId, {
+            $set: { password: hashedPassword },
+        });
+        return res.status(200).json({
+            success: true,
+            message: "Password Changed.",
+            status: 200,
+        });
+    }
+    catch (error) {
+        if (error instanceof errors.E_VALIDATION_ERROR) {
+            return res.status(400).json({
+                success: false,
+                status: 400,
+                errors: error.messages,
+            });
+        }
+        return res.status(500).json({
+            success: false,
+            message: "Server Error",
+            status: 400,
+        });
+    }
+};
+export const logout = async (req, res) => {
+    try {
+        const secretKey = req.params.sk;
+        const token = req.params.token;
+        const userId = req.params.id;
+        await User.findByIdAndUpdate(userId, {
+            $pull: { tokens: { secretKey, token } },
+        });
+        return res.status(200).json({
+            success: true,
+            message: "Logged out.",
+            status: 200,
+        });
+    }
+    catch (error) {
         return res.status(500).json({
             success: false,
             message: "Server Error",
