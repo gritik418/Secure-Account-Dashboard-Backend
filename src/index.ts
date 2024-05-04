@@ -16,10 +16,7 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin:
-      process.env.NODE_ENV === "production"
-        ? "https://secure-account-dashboard.vercel.app"
-        : "http://localhost:3000",
+    origin: ["https://secure-account-dashboard.vercel.app"],
     credentials: true,
   },
 });
@@ -49,10 +46,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("offline", async ({ currentDevice }) => {
-    socket.leave(currentDevice._id);
+  socket.on("offline", async ({ currentDevice, login_history }) => {
     await LoginHistory.findByIdAndUpdate(currentDevice._id, {
-      $set: { active: true },
+      $set: { active: false },
+    });
+    login_history.map((history: { _id: string }) => {
+      if (history._id !== currentDevice._id) {
+        socket
+          .to(history._id)
+          .emit("device-inactive", { inactiveDevice: currentDevice._id });
+      }
     });
   });
 });
