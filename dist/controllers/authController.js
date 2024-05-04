@@ -230,7 +230,6 @@ export const verifyEmail = async (req, res) => {
         const verify = await bcrypt.compare(output.otp, verificationToken.secretKey);
         if (!verify) {
             await EmailVerification.findOneAndDelete({ userId: user._id });
-            await User.findByIdAndDelete(user._id);
             return res.status(401).json({
                 success: false,
                 status: 400,
