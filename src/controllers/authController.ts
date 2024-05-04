@@ -13,7 +13,7 @@ import verificationTemplate from "../utils/verificationTemplate.js";
 import DeviceDetector from "device-detector-js";
 import { v4 as uuidv4 } from "uuid";
 import verificationSchema from "../validators/verificationSchema.js";
-import changePasswordSchema from "../validators/changePasswordSchema.js";
+import changePasswordSchema from "../validators/passwordSchema.js";
 
 vine.errorReporter = () => new ErrorReporter();
 
